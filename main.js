@@ -5,7 +5,10 @@ function playVideo(){
     let webm = webms.shift();
     console.log(webms);
     source.setAttribute('src', webm);
-    source.setAttribute('type', 'video/webm');
+    if(webm.match(/.webm/i))
+        source.setAttribute('type', 'video/webm');
+    else
+        source.setAttribute('type', 'video/mp4');
     let video = document.getElementById('video');
 
     if(video.firstElementChild != null)
@@ -22,7 +25,8 @@ function getWebms(response){
 
     for(let i = 0, j = 0; i < postCount; i++){
         if(posts[i]["files"].length > 0 &&
-           posts[i]["files"]["0"]["path"].match(/.webm/i))
+           (posts[i]["files"]["0"]["path"].match(/.webm/i) ||
+           posts[i]["files"]["0"]["path"].match(/.mp4/i)))
             webms[j++] = 'https://2ch.hk' + posts[i]["files"]["0"]["path"];
         
     }
