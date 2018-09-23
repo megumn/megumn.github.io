@@ -23,14 +23,11 @@ function getWebms(response){
     const postCount = response["threads"]["0"]["posts"].length;
     const posts = response["threads"]["0"]["posts"];
 
-    for(let i = 0, j = 0; i < postCount; i++){
-        if(posts[i]["files"].length > 0 &&
-           (posts[i]["files"]["0"]["path"].match(/.webm/i) ||
-           posts[i]["files"]["0"]["path"].match(/.mp4/i)))
-            webms[j++] = 'https://2ch.hk' + posts[i]["files"]["0"]["path"];
-        
-    }
-
+       for(let i = 0, j = 0; i < postCount; i++)
+        if(posts[i]["files"].length > 0)
+          for(let k=0; k<posts[i]["files"].length; k++)
+            if(posts[i]["files"][k]["path"].match(/.webm/i) || posts[i]["files"][k]["path"].match(/.mp4/i))
+              webms[j++] = 'https://2ch.hk' + posts[i]["files"][k]["path"];
     playVideo();
 }
 
