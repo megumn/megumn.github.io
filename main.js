@@ -2,7 +2,11 @@ let webms = [];
 
 function playVideo(){
     let source = document.createElement('source');
-    let webm = webms.shift();
+    let webm = [];
+    if(document.getElementsByName('position')[0].checked)
+        webm = webms.shift();
+    else
+        webm = webms.pop();
     console.log(webms);
     source.setAttribute('src', webm);
     if(webm.match(/.webm/i))
