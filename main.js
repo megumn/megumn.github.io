@@ -9,6 +9,7 @@ function playVideo(){
         webm = webms.pop();
     console.log(webms);
     source.setAttribute('src', webm);
+    source.setAttribute('onerror', 'nextVideo()');
     if(webm.match(/.webm/i))
         source.setAttribute('type', 'video/webm');
     else
