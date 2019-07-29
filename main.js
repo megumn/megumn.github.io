@@ -45,7 +45,7 @@ function getThread(url) {
         }
 
     }
-    xhr.open('GET', 'https://cors.io/?' + url);
+    xhr.open('GET', 'https://api.codetabs.com/v1/proxy?quest=' + url);
     xhr.send();
 }
 
