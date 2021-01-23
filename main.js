@@ -1,13 +1,15 @@
 let webms = [];
+let startCounter = 0;
+let endCounter;
 
 function playVideo(){
     let source = document.createElement('source');
     let webm = [];
     if(document.getElementsByName('position')[0].checked)
-        webm = webms.shift();
+        webm = webms[startCounter];
     else
-        webm = webms.pop();
-    console.log(webms);
+        webm = webms[endCounter];
+
     source.setAttribute('src', webm);
     source.setAttribute('onerror', 'nextVideo()');
     if(webm.match(/.webm/i))
@@ -21,7 +23,7 @@ function playVideo(){
     video.appendChild(source);
     video.load();
 
-    
+
 }
 
 function getWebms(response){
@@ -32,7 +34,8 @@ function getWebms(response){
         if(posts[i]["files"].length > 0)
           for(let k=0; k<posts[i]["files"].length; k++)
             if(posts[i]["files"][k]["path"].match(/.webm/i) || posts[i]["files"][k]["path"].match(/.mp4/i))
-              webms[j++] = 'https://2ch.hk' + posts[i]["files"][k]["path"];
+                webms[j++] = 'https://2ch.hk' + posts[i]["files"][k]["path"];
+    endCounter = webms.length-1;
     playVideo();
 }
 
@@ -56,9 +59,23 @@ function process(){
     console.log(url);
 
     getThread(url, getWebms);
-    
+
 }
 
 function nextVideo(){
+    if(document.getElementsByName('position')[0].checked && startCounter < webms.length-1)
+        ++startCounter;
+    else if(endCounter > 0)
+        --endCounter;
+
+    playVideo();
+}
+
+function prevVideo(){
+    if(document.getElementsByName('position')[0].checked && startCounter > 0)
+        --startCounter;
+    else if(endCounter < webms.length-1)
+        ++endCounter;
+
     playVideo();
 }
