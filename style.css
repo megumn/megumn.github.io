@@ -1,4 +1,5 @@
 body {
-      background-image: url(megumin.gif);
-      background-repeat: no-repeat;
-      }
+    background-image: url(megumin.gif), url(chibimin.gif);
+    background-position: left top, right bottom 22%;
+    background-repeat: no-repeat, no-repeat;
+}
