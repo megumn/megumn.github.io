@@ -60,7 +60,7 @@ function getWebms(response){
         svalue.innerHTML = webms.length-1;
     }
 
-    slider.onchange = function() {
+    slider.oninput = function() {
         slider.setAttribute('value', this.value);
         slider.value = this.value
         svalue.innerHTML = this.value;
@@ -68,6 +68,10 @@ function getWebms(response){
             startCounter = this.value;
         else
             endCounter = this.value;
+    }
+
+    slider.onchange = function() {
+
         playVideo();
     }
 
