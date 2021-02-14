@@ -1,7 +1,7 @@
 #player {
-    background-image: url(megumin.gif), url(chibimin.gif);
-    background-position: left top, right bottom;
-    background-repeat: no-repeat, no-repeat;
+    background-image: url(megumin.gif), url(chibimin.gif), url(madoka.gif);
+    background-position: left top, right bottom, right top;
+    background-repeat: no-repeat, no-repeat, no-repeat;
 }
 #slidercontainer { width: 100% }
 #slider { width: 100% }
