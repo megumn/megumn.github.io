@@ -1,4 +1,7 @@
-html,body { margin: 0; padding: 0; }
+html,body { margin: 0; padding: 0; height: 100%; }
+body {
+    background-image: url(bg.jpg);
+}
 #player {
     background-image: url(megumin.gif), url(chibimin.gif), url(madoka.gif);
     background-position: left top, right bottom, right top;
@@ -6,3 +9,17 @@ html,body { margin: 0; padding: 0; }
 }
 #slidercontainer { width: 100% }
 #slider { width: 99.7%; }
+#footer {
+    height: 250px;
+    background-image: url(zerotwo.gif);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+#line {
+    height: 5px;
+    border-width: 0;
+    color: black;
+    background-color: black;
+    margin: 0;
+    padding: 0;
+}
