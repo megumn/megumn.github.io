@@ -8,7 +8,7 @@ body {
     background-repeat: no-repeat, no-repeat, no-repeat;
 }
 #slidercontainer { width: 100% }
-#slider { width: 99.7%; }
+#slider { width: 854px; }
 #footer {
     height: 250px;
     background-image: url(zerotwo.gif);
