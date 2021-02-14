@@ -5,4 +5,4 @@ html,body { margin: 0; padding: 0; }
     background-repeat: no-repeat, no-repeat, no-repeat;
 }
 #slidercontainer { width: 100% }
-#slider { width: 100% }
+#slider { width: 99.7%; }

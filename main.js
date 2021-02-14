@@ -1,9 +1,9 @@
 let webms = [];
 let startCounter = 0;
 let endCounter;
-let slider = document.createElement('input');
+let slider = document.getElementById('slider');
 let scontainer = document.getElementById('slidercontainer');
-let svalue = document.createElement('span');
+let svalue = document.getElementById('slidervalue');
 
 function playVideo(){
     let source = document.createElement('source');
@@ -41,14 +41,7 @@ function getWebms(response){
     endCounter = webms.length-1;
 
 
-    slider.setAttribute('type', 'range');
-    slider.setAttribute('min', 0);
     slider.setAttribute('max', webms.length-1);
-    slider.setAttribute('id', 'slider');
-    scontainer.appendChild(slider);
-
-    svalue.setAttribute('id', 'slidervalue');
-    scontainer.appendChild(svalue);
 
     if(document.getElementsByName('position')[0].checked) {
         slider.setAttribute('value', 0);
