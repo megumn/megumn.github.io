@@ -1,9 +1,9 @@
 html,body { margin: 0; padding: 0; height: 100%; }
 body {
-    background-image: url(bg.jpg);
+    background-image: url(img/bg.jpg);
 }
 #player {
-    background-image: url(megumin.gif), url(chibimin.gif);
+    background-image: url(img/megumin.gif), url(img/chibimin.gif);
     background-position: left top, right bottom;
     background-repeat: no-repeat, no-repeat;
 }
@@ -11,7 +11,7 @@ body {
 #slider { width: 854px; }
 #footer {
     height: 250px;
-    background-image: url(zerotwo.gif);
+    background-image: url(img/zerotwo.gif);
     background-position: center;
     background-repeat: no-repeat;
 }
