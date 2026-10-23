@@ -1,0 +1,1185 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Русские счёты — интерактивный счётчик</title>
+<meta name="description" content="русские счеты онлайн">
+<meta name="robots" content="index, follow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%235b3b22'/%3E%3Cg fill='%23e8c48a'%3E%3Ccircle cx='9' cy='9' r='3'/%3E%3Ccircle cx='16' cy='16' r='3'/%3E%3Ccircle cx='23' cy='23' r='3'/%3E%3C/g%3E%3C/svg%3E">
+<meta name="theme-color" content="#f5ecdf" id="meta-theme-color">
+<script>
+  // тема ставится до отрисовки страницы, чтобы не было мигания
+  (function () {
+    var theme = 'light';
+    try {
+      var saved = localStorage.getItem('schety-theme');
+      theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    } catch (e) { /* localStorage может быть недоступен */ }
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+<style>
+  :root{
+    color-scheme: light;
+    --paper-1:#f5ecdf;
+    --paper-2:#e9dbc6;
+    --ink:#33241a;
+    --muted:#7f6b58;
+    --line:rgba(120,86,50,.18);
+    --card:#fdf8f0;
+    --shadow:0 20px 45px -22px rgba(70,44,20,.45);
+  }
+
+  *{ box-sizing:border-box; }
+
+  html{ -webkit-text-size-adjust:100%; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    padding: clamp(16px, 3.2vw, 40px) clamp(12px, 3vw, 32px) 40px;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size:15px;
+    line-height:1.45;
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 700px at 12% -12%, #fffaf2 0%, rgba(255,250,242,0) 60%),
+      radial-gradient(900px 600px at 105% 0%, #f8e9d3 0%, rgba(248,233,211,0) 55%),
+      linear-gradient(180deg, var(--paper-1), var(--paper-2) 85%);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .app{ max-width:940px; margin:0 auto; }
+
+  /* ---------- Шапка ---------- */
+  .head{ position:relative; display:flex; flex-direction:column; gap:8px; margin-bottom:clamp(16px,2.4vw,26px); }
+
+  /* ---------- Переключатель темы ---------- */
+  .theme-toggle{
+    position:absolute;
+    top:0; right:0;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:7px 12px 7px 10px;
+    border-radius:999px;
+    border:1px solid rgba(122,84,44,.28);
+    background:rgba(255,255,255,.55);
+    color:#5d4630;
+    font:inherit;
+    font-size:12px;
+    font-weight:650;
+    line-height:1;
+    cursor:pointer;
+    -webkit-backdrop-filter:blur(4px);
+    backdrop-filter:blur(4px);
+    box-shadow:0 2px 0 rgba(122,84,44,.12), 0 8px 18px -14px rgba(80,50,20,.5);
+    transition:background .2s ease, color .2s ease, border-color .2s ease, transform .08s ease;
+  }
+  .theme-toggle:hover{ background:rgba(255,255,255,.85); }
+  .theme-toggle:active{ transform:translateY(1px); }
+  .theme-toggle:focus-visible{ outline:2px solid #b98137; outline-offset:3px; }
+  .theme-toggle .ico{ display:none; width:15px; height:15px; flex:0 0 auto; }
+  html:not([data-theme="dark"]) .theme-toggle .ico.sun{ display:block; }
+  html[data-theme="dark"] .theme-toggle .ico.moon{ display:block; }
+  html[data-theme="dark"] .theme-toggle{
+    border-color:rgba(214,170,105,.32);
+    background:rgba(255,235,200,.07);
+    color:#f1ddc2;
+  }
+  html[data-theme="dark"] .theme-toggle:hover{ background:rgba(255,235,200,.14); }
+  .head h1{
+    margin:0;
+    font-family:"Iowan Old Style", Georgia, "Times New Roman", serif;
+    font-weight:600;
+    font-size:clamp(28px,4.4vw,40px);
+    line-height:1.05;
+    letter-spacing:.2px;
+    color:#3b2817;
+  }
+  .head h1::after{
+    content:"";
+    display:block;
+    width:64px; height:3px;
+    margin-top:10px;
+    border-radius:2px;
+    background:linear-gradient(90deg,#c99a52, rgba(201,154,82,0));
+  }
+  .head .lead{
+    margin:0;
+    max-width:64ch;
+    color:var(--muted);
+    font-size:clamp(13.5px,1.7vw,15px);
+  }
+  .head .lead b{ color:#5c432c; }
+
+  /* ---------- Раскладка ---------- */
+  .layout{
+    display:grid;
+    grid-template-columns:minmax(0,auto) 318px;
+    gap:clamp(18px,2.6vw,28px);
+    align-items:start;
+    justify-content:center;
+  }
+
+  .abacus-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+    min-width:0;
+  }
+
+  /* ---------- Деревянная рама ---------- */
+  .frame{
+    position:relative;
+    width:fit-content;
+    padding:14px;
+    border-radius:22px;
+    background:
+      radial-gradient(circle at 13px 13px, #e0bd7c 0 1.5px, #8a6430 1.5px 2.6px, transparent 2.8px),
+      radial-gradient(circle at calc(100% - 13px) 13px, #e0bd7c 0 1.5px, #8a6430 1.5px 2.6px, transparent 2.8px),
+      radial-gradient(circle at 13px calc(100% - 13px), #e0bd7c 0 1.5px, #8a6430 1.5px 2.6px, transparent 2.8px),
+      radial-gradient(circle at calc(100% - 13px) calc(100% - 13px), #e0bd7c 0 1.5px, #8a6430 1.5px 2.6px, transparent 2.8px),
+      linear-gradient(180deg,#916744 0%,#77512f 20%,#5b3b22 62%,#3f2713 100%);
+    box-shadow:
+      0 26px 50px -24px rgba(60,36,14,.6),
+      inset 0 2px 0 rgba(255,255,255,.14),
+      inset 0 -4px 10px rgba(0,0,0,.35),
+      0 0 0 1px rgba(45,26,10,.6);
+  }
+  .frame::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    pointer-events:none;
+    opacity:.3;
+    background-image:repeating-linear-gradient(93deg,
+      rgba(255,255,255,.05) 0 1px,
+      transparent 1px 7px,
+      rgba(0,0,0,.06) 7px 8px,
+      transparent 8px 15px);
+    mix-blend-mode:overlay;
+  }
+
+  .inner{
+    /* размеры счётов */
+    --bw:24px;      /* ширина косточки — вдоль прутка */
+    --bh:32px;      /* высота косточки — поперёк прутка */
+    --gap:4px;
+    --step:calc(var(--bw) + var(--gap));
+    --play:50px;
+    --meta-w:106px;
+    --rail-w:calc(10 * var(--step) + var(--play));
+    --row-h:calc(var(--bh) + 10px);
+
+    position:relative;
+    border-radius:14px;
+    padding:12px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    background:linear-gradient(180deg,#2a1c11,#1d1209);
+    box-shadow:
+      inset 0 2px 10px rgba(0,0,0,.7),
+      inset 0 -1px 0 rgba(255,240,210,.05),
+      0 1px 0 rgba(255,255,255,.08);
+  }
+
+  /* ---------- Ряд ---------- */
+  .row{
+    --g:calc(var(--play) + (10 - var(--n)) * var(--step));
+    display:grid;
+    grid-template-columns:var(--meta-w) var(--rail-w);
+    column-gap:10px;
+    align-items:center;
+    height:var(--row-h);
+    border-radius:10px;
+    transition:background .18s ease;
+  }
+  .row:hover{ background:rgba(255,232,190,.045); }
+  .row:focus-within{ background:rgba(255,232,190,.075); }
+  .row[data-kind="quarter"]{ margin-bottom:3px; }
+
+  .row-meta{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap:1px;
+    min-width:0;
+    padding-left:2px;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .row-label{
+    font-size:10.5px;
+    line-height:1.15;
+    letter-spacing:.2px;
+    color:rgba(255,238,210,.6);
+    white-space:nowrap;
+    transition:color .18s ease;
+  }
+  .row:hover .row-label{ color:rgba(255,240,214,.85); }
+  .row-count{
+    font-size:12px;
+    font-weight:700;
+    line-height:1.1;
+    font-variant-numeric:tabular-nums;
+    color:#f4d69b;
+    transition:color .2s ease;
+  }
+  .row-count.zero{ color:rgba(255,238,210,.26); font-weight:600; }
+
+  /* ---------- Пруток ---------- */
+  .rail{
+    position:relative;
+    width:var(--rail-w);
+    height:100%;
+    border-radius:8px;
+    touch-action:pan-y;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .rail:focus{ outline:none; }
+  .rail:focus-visible:not(.pointer-focus){
+    outline:2px solid #f0c475;
+    outline-offset:3px;
+  }
+  .rod{
+    position:absolute;
+    left:0; right:0;
+    top:50%;
+    height:4px;
+    transform:translateY(-50%);
+    border-radius:3px;
+    background:linear-gradient(180deg,#d6dbe0 0%,#9aa2aa 38%,#5d646c 52%,#41474e 62%,#7f868e 100%);
+    box-shadow:0 1px 2px rgba(0,0,0,.65), 0 -1px 0 rgba(255,255,255,.18);
+    pointer-events:none;
+  }
+
+  /* ---------- Косточки ---------- */
+  .bead{
+    position:absolute;
+    top:50%;
+    left:calc(var(--i) * var(--step));
+
+    /* вытянутая по вертикали точёная деревянная косточка, как на настоящих счетах */
+    --b-dark:#5a3716;
+    --b-mid:#c49a63;
+    --b-light:#f8e6c2;
+
+    width:var(--bw);
+    height:var(--bh);
+    border-radius:50%;
+    transform:translate(0,-50%);
+    z-index:1;
+    cursor:grab;
+    touch-action:pan-y;
+    user-select:none;
+    -webkit-user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    background:
+      /* узкий блик сверху слева */
+      radial-gradient(ellipse 38% 26% at 37% 18%, rgba(255,255,255,.62) 0%, rgba(255,255,255,0) 72%),
+      /* затемнение к торцам — косточка точёная, с округлыми краями */
+      linear-gradient(180deg, rgba(24,12,4,.34) 0%, rgba(24,12,4,0) 26%, rgba(24,12,4,0) 72%, rgba(24,12,4,.4) 100%),
+      /* цилиндрический объём поперёк прутка */
+      linear-gradient(90deg,
+        var(--b-dark) 0%,
+        var(--b-mid) 16%,
+        var(--b-light) 42%,
+        var(--b-mid) 64%,
+        var(--b-dark) 100%);
+    box-shadow:
+      inset 0 -2px 3px rgba(40,22,6,.5),
+      inset 0 2px 2px rgba(255,255,255,.34),
+      inset 2px 0 3px rgba(255,255,255,.14),
+      inset -2px 0 3px rgba(40,22,6,.28),
+      0 3px 4px rgba(0,0,0,.55),
+      0 0 0 1px rgba(50,30,12,.45);
+    transition:transform .2s cubic-bezier(.25,.9,.25,1), filter .15s ease;
+    will-change:transform;
+  }
+  /* отверстие, через которое проходит пруток */
+  .bead::after{
+    content:"";
+    position:absolute;
+    left:50%; top:50%;
+    width:38%; height:14%;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:radial-gradient(ellipse at 50% 40%, rgba(48,28,10,.62), rgba(90,60,28,.22) 62%, rgba(255,255,255,.12) 100%);
+    opacity:.55;
+  }
+  .bead:hover{ filter:brightness(1.07) saturate(1.03); }
+
+  .bead.inactive{ transform:translate(var(--g), -50%); }
+
+  .row.dragging .bead{ transition:transform .05s linear, filter .15s ease; cursor:grabbing; }
+
+  /* Косточки четвертей — тёмно-вишнёвые */
+  .row[data-kind="quarter"] .bead{
+    --b-dark:#4a0f08;
+    --b-mid:#b34a33;
+    --b-light:#f6a88c;
+    box-shadow:
+      inset 0 -2px 3px rgba(40,6,2,.55),
+      inset 0 2px 2px rgba(255,255,255,.3),
+      inset 2px 0 3px rgba(255,255,255,.14),
+      inset -2px 0 3px rgba(40,6,2,.32),
+      0 3px 4px rgba(0,0,0,.55),
+      0 0 0 1px rgba(56,12,6,.5);
+  }
+
+  /* 5-я и 6-я косточки — нефритовые, чтобы глаз цеплялся за середину ряда */
+  .bead.mark{
+    --b-dark:#1c3f2f;
+    --b-mid:#5f9a7e;
+    --b-light:#d3ebdb;
+    box-shadow:
+      inset 0 -2px 3px rgba(10,34,24,.5),
+      inset 0 2px 2px rgba(255,255,255,.34),
+      inset 2px 0 3px rgba(255,255,255,.16),
+      inset -2px 0 3px rgba(10,34,24,.3),
+      0 3px 4px rgba(0,0,0,.55),
+      0 0 0 1px rgba(18,52,38,.5);
+  }
+  .bead.mark::after{
+    background:radial-gradient(ellipse at 50% 40%, rgba(12,40,26,.6), rgba(30,80,58,.25) 62%, rgba(255,255,255,.12) 100%);
+    opacity:.6;
+  }
+
+  /* ---------- Разделитель дробной и целой частей ---------- */
+  .split{
+    height:1px;
+    margin:6px 4px;
+    background:linear-gradient(90deg,
+      rgba(255,224,170,0),
+      rgba(255,224,170,.28) 15%,
+      rgba(255,224,170,.28) 85%,
+      rgba(255,224,170,0));
+  }
+
+  .caption{
+    margin:0;
+    max-width:470px;
+    text-align:center;
+    font-size:12.5px;
+    line-height:1.5;
+    color:#8a7360;
+  }
+
+  /* ---------- Панель справа ---------- */
+  .panel{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    min-width:0;
+  }
+
+  .value-card{
+    position:relative;
+    overflow:hidden;
+    border-radius:18px;
+    padding:16px 18px;
+    color:#f7e6c4;
+    border:1px solid rgba(122,84,44,.9);
+    background:linear-gradient(160deg,#3a2817 0%,#241710 60%,#1b110a 100%);
+    box-shadow:
+      0 18px 34px -20px rgba(50,30,12,.65),
+      inset 0 1px 0 rgba(255,238,200,.16),
+      inset 0 -2px 8px rgba(0,0,0,.5);
+  }
+  .value-card::before{
+    content:"¼";
+    position:absolute;
+    right:14px; top:6px;
+    font-family:Georgia, "Times New Roman", serif;
+    font-size:40px;
+    line-height:1;
+    color:rgba(255,214,140,.11);
+    pointer-events:none;
+  }
+  .value-card::after{
+    content:"";
+    position:absolute;
+    right:-40px; top:-60px;
+    width:150px; height:150px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(224,170,86,.2), transparent 70%);
+    pointer-events:none;
+  }
+  .value-label{
+    position:relative;
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:rgba(248,226,186,.65);
+  }
+  .value{
+    position:relative;
+    margin-top:6px;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size:clamp(22px,2.6vw,26px);
+    font-weight:700;
+    line-height:1.15;
+    letter-spacing:.02em;
+    color:#ffe3a8;
+    text-shadow:0 0 22px rgba(255,190,95,.28);
+    font-variant-numeric:tabular-nums;
+    overflow-wrap:anywhere;
+  }
+  .value-sub{
+    position:relative;
+    margin-top:8px;
+    min-height:1.3em;
+    font-size:12px;
+    color:rgba(247,230,196,.62);
+  }
+
+  .breakdown{
+    background:linear-gradient(180deg, rgba(255,252,246,.94), rgba(252,245,234,.9));
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:14px 14px 8px;
+    box-shadow:var(--shadow);
+  }
+  .breakdown-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:8px;
+    padding-bottom:8px;
+    border-bottom:1px solid rgba(120,86,50,.14);
+  }
+  .breakdown-head span:first-child{
+    font-size:11px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    font-weight:700;
+    color:#8b6f52;
+  }
+  .breakdown-hint{ font-size:10.5px; color:#a4907b; }
+  .break-list{
+    list-style:none;
+    margin:0;
+    padding:0;
+    max-height:320px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(150,112,63,.45) transparent;
+  }
+  .break-list::-webkit-scrollbar{ width:6px; }
+  .break-list::-webkit-scrollbar-thumb{
+    background:rgba(150,112,63,.4);
+    border-radius:6px;
+  }
+  .break-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:10px;
+    padding:6px 2px;
+    border-bottom:1px dashed rgba(120,86,50,.14);
+    font-size:13px;
+  }
+  .break-item:last-child{ border-bottom:0; }
+  .break-label{ color:#6f5945; }
+  .break-label em{
+    font-style:normal;
+    font-weight:700;
+    color:#96703f;
+    margin-left:3px;
+  }
+  .break-value{
+    font-variant-numeric:tabular-nums;
+    font-weight:700;
+    color:#3b2a19;
+    white-space:nowrap;
+  }
+  .break-empty{
+    margin:10px 2px 8px;
+    font-size:12.5px;
+    line-height:1.45;
+    color:#97836e;
+  }
+
+  .actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .btn{
+    appearance:none;
+    border:1px solid rgba(122,84,44,.35);
+    border-radius:12px;
+    padding:10px 10px;
+    font:inherit;
+    font-size:12.8px;
+    font-weight:650;
+    white-space:nowrap;
+    color:#4a331e;
+    background:linear-gradient(180deg,#fffdf9,#f1e5d3);
+    box-shadow:0 2px 0 rgba(122,84,44,.16), 0 8px 18px -12px rgba(80,50,20,.45);
+    cursor:pointer;
+    transition:transform .08s ease, box-shadow .18s ease, background .18s ease;
+  }
+  .btn:hover{ background:linear-gradient(180deg,#fff,#f7ecdd); }
+  .btn:active{ transform:translateY(1px); box-shadow:0 1px 0 rgba(122,84,44,.18); }
+  .btn:focus-visible{ outline:2px solid #b98137; outline-offset:2px; }
+  .btn.primary{
+    color:#fff4de;
+    border-color:#4f3118;
+    background:linear-gradient(180deg,#8d6236,#6a4523);
+    box-shadow:0 2px 0 rgba(47,28,12,.5), 0 10px 22px -12px rgba(70,42,18,.7);
+  }
+  .btn.primary:hover{ background:linear-gradient(180deg,#9a6c3d,#754c27); }
+
+  .hint{
+    margin:0;
+    font-size:12px;
+    line-height:1.5;
+    color:#8d7863;
+  }
+  .hint kbd{
+    font:inherit;
+    font-size:11px;
+    padding:1px 5px;
+    border-radius:5px;
+    border:1px solid rgba(122,84,44,.3);
+    background:rgba(255,255,255,.7);
+    color:#5d4630;
+  }
+
+  .foot{
+    margin-top:26px;
+    text-align:center;
+    font-size:11.5px;
+    letter-spacing:.02em;
+    color:#a28d78;
+  }
+
+  /* ---------- Адаптив ---------- */
+  @media (max-width:960px){
+    .layout{
+      grid-template-columns:minmax(0,1fr);
+      justify-items:center;
+    }
+    .panel{ display:contents; }
+    .value-card{ order:0; width:100%; max-width:470px; }
+    .abacus-wrap{ order:1; width:100%; }
+    .actions{ order:2; width:100%; max-width:470px; }
+    .breakdown{ order:3; width:100%; max-width:470px; }
+    .hint{ order:4; width:100%; max-width:470px; text-align:center; }
+  }
+
+  @media (max-width:720px){
+    .inner{
+      --bw:22px;
+      --bh:30px;
+      --gap:3px;
+      --play:42px;
+      --meta-w:76px;
+      padding:10px 12px;
+    }
+    .frame{ padding:12px; }
+  }
+
+  @media (max-width:520px){
+    .inner{
+      --bw:20px;
+      --bh:27px;
+      --gap:2px;
+      --play:26px;
+      --meta-w:88px;
+      padding:9px 10px;
+    }
+    .frame{ padding:11px; border-radius:20px; }
+    .row{ column-gap:8px; }
+    .row-label{ font-size:9px; }
+  }
+
+  @media (max-width:430px){
+    .inner{
+      --bw:18px;
+      --bh:24px;
+      --gap:2px;
+      --play:20px;
+      --meta-w:84px;
+      padding:8px 9px;
+    }
+    .row{ column-gap:7px; }
+    .row-label{ font-size:8.5px; }
+    .row-count{ font-size:11px; }
+    .frame{ padding:10px; }
+  }
+
+  @media (max-width:370px){
+    .inner{
+      --bw:16px;
+      --bh:21px;
+      --gap:2px;
+      --play:14px;
+      --meta-w:84px;
+      padding:6px 8px;
+    }
+    .row{ column-gap:6px; }
+    .row-label{ font-size:8px; }
+    .frame{ padding:8px; padding-top:9px; }
+    .caption{ font-size:11.5px; }
+  }
+
+  /* ---------- Тёмная тема ---------- */
+  [data-theme="dark"]{
+    color-scheme:dark;
+    --ink:#ede0cd;
+    --muted:#b7a48d;
+    --line:rgba(232,200,160,.15);
+    --card:#211812;
+    --shadow:0 22px 46px -24px rgba(0,0,0,.8);
+  }
+  [data-theme="dark"] body{
+    background:
+      radial-gradient(1100px 700px at 12% -12%, #2b2017 0%, rgba(43,32,23,0) 60%),
+      radial-gradient(900px 600px at 105% 0%, #241a12 0%, rgba(36,26,18,0) 55%),
+      linear-gradient(180deg, #16100b, #0c0805 85%);
+  }
+  [data-theme="dark"] .head h1{ color:#f5e6cf; }
+  [data-theme="dark"] .head h1::after{ background:linear-gradient(90deg,#d8ab63, rgba(216,171,99,0)); }
+  [data-theme="dark"] .head .lead b{ color:#eac99b; }
+  [data-theme="dark"] .caption{ color:#9e8b78; }
+  [data-theme="dark"] .frame{
+    box-shadow:
+      0 30px 60px -26px rgba(0,0,0,.95),
+      0 0 90px -34px rgba(224,170,86,.35),
+      inset 0 2px 0 rgba(255,255,255,.1),
+      inset 0 -4px 10px rgba(0,0,0,.5),
+      0 0 0 1px rgba(16,9,3,.9);
+  }
+  [data-theme="dark"] .value-card{
+    border-color:rgba(214,170,105,.45);
+    box-shadow:
+      0 18px 34px -20px rgba(0,0,0,.9),
+      0 0 60px -30px rgba(255,190,95,.4),
+      inset 0 1px 0 rgba(255,238,200,.18),
+      inset 0 -2px 8px rgba(0,0,0,.55);
+  }
+  [data-theme="dark"] .breakdown{
+    background:linear-gradient(180deg, rgba(38,27,19,.96), rgba(27,19,14,.94));
+    border-color:var(--line);
+  }
+  [data-theme="dark"] .breakdown-head{ border-bottom-color:rgba(232,200,160,.12); }
+  [data-theme="dark"] .breakdown-head span:first-child{ color:#c8a97f; }
+  [data-theme="dark"] .breakdown-hint{ color:#8d7963; }
+  [data-theme="dark"] .break-item{ border-bottom-color:rgba(232,200,160,.09); }
+  [data-theme="dark"] .break-label{ color:#c2af99; }
+  [data-theme="dark"] .break-label em{ color:#e2ba80; }
+  [data-theme="dark"] .break-value{ color:#f7ead6; }
+  [data-theme="dark"] .break-empty{ color:#9b8773; }
+  [data-theme="dark"] .break-list{ scrollbar-color:rgba(214,170,105,.4) transparent; }
+  [data-theme="dark"] .break-list::-webkit-scrollbar-thumb{ background:rgba(214,170,105,.35); }
+  [data-theme="dark"] .btn{
+    color:#f2e2cb;
+    border-color:rgba(214,170,105,.3);
+    background:linear-gradient(180deg,#3b2a1d,#251a12);
+    box-shadow:0 2px 0 rgba(0,0,0,.5), 0 10px 22px -16px rgba(0,0,0,.95);
+  }
+  [data-theme="dark"] .btn:hover{ background:linear-gradient(180deg,#483427,#2c2016); }
+  [data-theme="dark"] .btn:focus-visible{ outline-color:#d8a75f; }
+  [data-theme="dark"] .btn.primary{
+    color:#fff4de;
+    border-color:#5d3d21;
+    background:linear-gradient(180deg,#96693b,#714a26);
+  }
+  [data-theme="dark"] .btn.primary:hover{ background:linear-gradient(180deg,#a37443,#7c522a); }
+  [data-theme="dark"] .hint{ color:#a08b74; }
+  [data-theme="dark"] .hint kbd{
+    border-color:rgba(214,170,105,.3);
+    background:rgba(255,240,214,.08);
+    color:#e6cfa9;
+  }
+  [data-theme="dark"] .foot{ color:#8f7c68; }
+
+  @media (max-width:560px){
+    .theme-toggle{ position:static; order:-1; align-self:flex-start; margin-bottom:2px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition-duration:.001ms !important; animation-duration:.001ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header class="head">
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-pressed="false" aria-label="Тема: светлая. Переключить" title="Включить тёмную тему">
+        <svg class="ico sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"/>
+          <path d="M12 2.6v2.2M12 19.2v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.6 12h2.2M19.2 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/>
+        </svg>
+        <svg class="ico moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.4 14.6A8.6 8.6 0 0 1 9.4 3.6a8.6 8.6 0 1 0 11 11z"/>
+        </svg>
+        <span id="theme-label">Светлая</span>
+      </button>
+      <h1>Русские счёты</h1>
+      <p class="lead">
+        Сверху — целые разряды до миллионов, под чертой — доли: четверти, десятые, сотые
+        и вплоть до миллионных. <b>Счётчик</b> складывает все сдвинутые косточки и показывает текущее число.
+      </p>
+    </header>
+
+    <main class="layout">
+      <section class="abacus-wrap" aria-label="Счёты">
+        <div class="frame">
+          <div class="inner" id="abacus"></div>
+        </div>
+        <p class="caption">
+          Сверху — целая часть, под чертой — дробная. Первый ряд дробной части — четверти:
+          каждая косточка 0,25, четыре косточки дают единицу.
+        </p>
+      </section>
+
+      <aside class="panel">
+        <div class="value-card">
+          <div class="value-label">Текущее число</div>
+          <div class="value" id="value" role="status" aria-live="polite" aria-atomic="true">0,00</div>
+          <div class="value-sub" id="valueSub">все косточки на месте</div>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn primary" id="reset">Сбросить</button>
+          <button type="button" class="btn" id="random">Случайное число</button>
+        </div>
+
+        <div class="breakdown">
+          <div class="breakdown-head">
+            <span>Разряды</span>
+            <span class="breakdown-hint">вклад в сумму</span>
+          </div>
+          <ul class="break-list" id="breakdown"></ul>
+        </div>
+
+        <p class="hint">
+          Щёлкайте по косточкам или тяните их вдоль прутка. С клавиатуры:
+          <kbd>Tab</kbd> — войти в счёты, <kbd>↑</kbd> и <kbd>↓</kbd> — выбрать ряд,
+          <kbd>←</kbd> — придвинуть косточки, <kbd>→</kbd> — отодвинуть,
+          <kbd>Home</kbd> и <kbd>End</kbd> — в начало и в конец.
+        </p>
+      </aside>
+    </main>
+
+    <footer class="foot">Чистый HTML, CSS и JavaScript — без библиотек</footer>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ==============================================================
+     Тема: светлая / тёмная
+     ============================================================== */
+  const THEME_KEY = 'schety-theme';
+  const rootEl = document.documentElement;
+  const themeBtn = document.getElementById('theme-toggle');
+  const themeLabel = document.getElementById('theme-label');
+  const metaTheme = document.getElementById('meta-theme-color');
+
+  const readTheme = () => { try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; } };
+  const saveTheme = t => { try { localStorage.setItem(THEME_KEY, t); } catch (e) { /* ignore */ } };
+
+  function applyTheme(theme) {
+    const dark = theme === 'dark';
+    rootEl.setAttribute('data-theme', theme);
+    if (themeLabel) themeLabel.textContent = dark ? 'Тёмная' : 'Светлая';
+    if (themeBtn) {
+      themeBtn.setAttribute('aria-pressed', String(dark));
+      themeBtn.setAttribute('aria-label', 'Тема: ' + (dark ? 'тёмная' : 'светлая') + '. Переключить');
+      themeBtn.title = dark ? 'Включить светлую тему' : 'Включить тёмную тему';
+    }
+    if (metaTheme) metaTheme.setAttribute('content', dark ? '#16100b' : '#f5ecdf');
+  }
+
+  applyTheme(rootEl.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+
+  if (themeBtn) {
+    themeBtn.addEventListener('click', () => {
+      const next = rootEl.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      saveTheme(next);
+    });
+  }
+
+  if (window.matchMedia) {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSystem = (e) => { if (!readTheme()) applyTheme(e.matches ? 'dark' : 'light'); };
+    if (mq.addEventListener) mq.addEventListener('change', onSystem);
+    else if (mq.addListener) mq.addListener(onSystem);
+  }
+
+  /* --------------------------------------------------------------
+     Разряды. unit — «цена» одной косточки в миллионных долях,
+     чтобы всё считалось целыми числами и без ошибок округления.
+     -------------------------------------------------------------- */
+  const ROWS = [
+    // сначала целая часть — сверху вниз от миллионов к единицам
+    { id:'i6', label:'миллионы',       place:'1 000 000', n:10, unit:1000000000000,   kind:'int' },
+    { id:'i5', label:'сотни тысяч',    place:'100 000',  n:10, unit:100000000000,     kind:'int' },
+    { id:'i4', label:'десятки тысяч',  place:'10 000',   n:10, unit:10000000000,      kind:'int' },
+    { id:'i3', label:'тысячи',         place:'1 000',    n:10, unit:1000000000,       kind:'int' },
+    { id:'i2', label:'сотни',          place:'100',      n:10, unit:100000000,        kind:'int' },
+    { id:'i1', label:'десятки',        place:'10',       n:10, unit:10000000,         kind:'int' },
+    { id:'i0', label:'единицы',        place:'1',        n:10, unit:1000000,          kind:'int' },
+    // под чертой — дробная часть
+    { id:'q',  label:'четверти',       place:'¼ (0,25)', n:4,  unit:250000,           kind:'quarter' },
+    { id:'d1', label:'десятые',        place:'0,1',      n:10, unit:100000,           kind:'dec' },
+    { id:'d2', label:'сотые',          place:'0,01',     n:10, unit:10000,            kind:'dec' },
+    { id:'d3', label:'тысячные',       place:'0,001',    n:10, unit:1000,             kind:'dec' },
+    { id:'d4', label:'десятитысячные', place:'0,0001',   n:10, unit:100,              kind:'dec' },
+    { id:'d5', label:'стотысячные',    place:'0,00001',  n:10, unit:10,               kind:'dec' },
+    { id:'d6', label:'миллионные',     place:'0,000001', n:10, unit:1,                kind:'dec' }
+  ];
+
+  const state = new Array(ROWS.length).fill(0);
+
+  const inner = document.getElementById('abacus');
+  const valueEl = document.getElementById('value');
+  const valueSubEl = document.getElementById('valueSub');
+  const breakdownEl = document.getElementById('breakdown');
+
+  const rowRefs = [];   // { rowEl, rail, beads, countEl }
+
+  /* --------------------------------------------------------------
+     Форматирование: микроединицы (1e-6) → строка с запятой
+     -------------------------------------------------------------- */
+  const THIN = '\u2009';
+  const group = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, THIN);
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+  function formatMicro(micro, minFrac = 0) {
+    const int = Math.floor(micro / 1000000);
+    let frac = String(micro % 1000000).padStart(6, '0');
+    let len = 6;
+    while (len > minFrac && frac[len - 1] === '0') len -= 1;
+    frac = frac.slice(0, len);
+    return group(int) + (frac ? ',' + frac : '');
+  }
+
+  /* --------------------------------------------------------------
+     Построение счётов
+     -------------------------------------------------------------- */
+  function buildAbacus() {
+    let prevKind = null;
+
+    ROWS.forEach((row, ri) => {
+      if (prevKind === 'int' && row.kind !== 'int') {
+        const split = document.createElement('div');
+        split.className = 'split';
+        split.setAttribute('aria-hidden', 'true');
+        inner.appendChild(split);
+      }
+      prevKind = row.kind;
+
+      const rowEl = document.createElement('div');
+      rowEl.className = 'row';
+      rowEl.dataset.kind = row.kind;
+      rowEl.style.setProperty('--n', row.n);
+
+      const meta = document.createElement('div');
+      meta.className = 'row-meta';
+      meta.title = row.label + ' — ' + row.place;
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'row-label';
+      labelEl.textContent = row.label;
+
+      const countEl = document.createElement('span');
+      countEl.className = 'row-count zero';
+      countEl.textContent = '0';
+
+      meta.append(labelEl, countEl);
+
+      const rail = document.createElement('div');
+      rail.className = 'rail';
+      rail.tabIndex = ri === 0 ? 0 : -1;   // «плавающий» tabindex: в счёты входим один раз
+      rail.setAttribute('role', 'slider');
+      rail.setAttribute('aria-label', row.label + ', цена косточки ' + row.place
+        + '. Стрелки вверх и вниз — сменить ряд');
+      rail.setAttribute('aria-valuemin', '0');
+      rail.setAttribute('aria-valuemax', String(row.n));
+      rail.setAttribute('aria-valuenow', '0');
+      rail.setAttribute('aria-valuetext', '0');
+
+      const rod = document.createElement('span');
+      rod.className = 'rod';
+      rod.setAttribute('aria-hidden', 'true');
+      rail.appendChild(rod);
+
+      const beads = [];
+      for (let i = 0; i < row.n; i += 1) {
+        const bead = document.createElement('span');
+        bead.className = 'bead';
+        if (i === 4 || i === 5) bead.classList.add('mark');   // 5-я и 6-я косточки — ориентир
+        bead.classList.add('inactive');
+        bead.style.setProperty('--i', i);
+        bead.dataset.index = i;
+        bead.setAttribute('aria-hidden', 'true');
+        rail.appendChild(bead);
+        beads.push(bead);
+      }
+
+      rowEl.append(meta, rail);
+      inner.appendChild(rowEl);
+
+      rowRefs.push({ rowEl, rail, beads, countEl });
+      bindRail(ri, rowEl, rail);
+    });
+  }
+
+  /* --------------------------------------------------------------
+     Взаимодействие: клик по косточке и «протяжка» вдоль прутка
+     -------------------------------------------------------------- */
+  function beadTargetCount(index, current) {
+    return index < current ? index : index + 1;
+  }
+
+  function focusRow(ri) {
+    const idx = clamp(ri, 0, rowRefs.length - 1);
+    const ref = rowRefs[idx];
+    if (!ref) return;
+    rowRefs.forEach((r, i) => { r.rail.tabIndex = i === idx ? 0 : -1; });
+    ref.rail.classList.remove('pointer-focus');
+    ref.rail.focus();
+  }
+
+  function getStep() {
+    const cs = getComputedStyle(inner);
+    return parseFloat(cs.getPropertyValue('--bw')) + parseFloat(cs.getPropertyValue('--gap'));
+  }
+
+  function bindRail(ri, rowEl, rail) {
+    const row = ROWS[ri];
+    let gesture = null;
+
+    rail.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+      rail.classList.add('pointer-focus');
+      rail.focus({ preventScroll: true });
+
+      const beadEl = e.target.closest('.bead');
+      const tap = beadEl ? beadTargetCount(Number(beadEl.dataset.index), state[ri]) : null;
+
+      gesture = {
+        pointerId: e.pointerId,
+        mouse: e.pointerType === 'mouse',
+        x0: e.clientX,
+        y0: e.clientY,
+        step: getStep(),
+        tap,
+        base: null,
+        dragging: false
+      };
+
+      if (gesture.mouse && tap !== null) {
+        setCount(ri, tap);
+        gesture.base = state[ri];
+      }
+
+      try { rail.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    });
+
+    rail.addEventListener('pointermove', (e) => {
+      if (!gesture || e.pointerId !== gesture.pointerId) return;
+
+      const dx = e.clientX - gesture.x0;
+      const dy = e.clientY - gesture.y0;
+
+      if (!gesture.dragging) {
+        if (Math.abs(dx) < 6 || Math.abs(dx) < Math.abs(dy)) return;
+        if (gesture.tap === null) return;
+        if (!gesture.mouse) {
+          setCount(ri, gesture.tap);
+          gesture.base = state[ri];
+        }
+        gesture.dragging = true;
+        rowEl.classList.add('dragging');
+      }
+
+      const next = clamp(gesture.base + Math.round(dx / gesture.step), 0, row.n);
+      if (next !== state[ri]) setCount(ri, next);
+    });
+
+    const finish = () => {
+      rowEl.classList.remove('dragging');
+      gesture = null;
+    };
+
+    rail.addEventListener('pointerup', (e) => {
+      if (!gesture || e.pointerId !== gesture.pointerId) return;
+      const g = gesture;
+      try { rail.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      if (!g.dragging && !g.mouse && g.tap !== null) setCount(ri, g.tap);
+      finish();
+    });
+
+    rail.addEventListener('pointercancel', (e) => {
+      if (!gesture || e.pointerId !== gesture.pointerId) return;
+      finish();
+    });
+
+    rail.addEventListener('blur', () => rail.classList.remove('pointer-focus'));
+
+    rail.addEventListener('focus', () => {
+      rowRefs.forEach((r, i) => { r.rail.tabIndex = i === ri ? 0 : -1; });
+    });
+
+    rail.addEventListener('keydown', (e) => {
+      rail.classList.remove('pointer-focus');
+      const cur = state[ri];
+      let next = null;
+
+      switch (e.key) {
+        case 'ArrowUp':
+          e.preventDefault();
+          focusRow(ri - 1);
+          return;
+        case 'ArrowDown':
+          e.preventDefault();
+          focusRow(ri + 1);
+          return;
+        case 'ArrowLeft':  next = cur + 1; break;   // ← придвигаем косточки
+        case 'ArrowRight': next = cur - 1; break;   // → отодвигаем
+        case 'PageUp':     next = cur + 5; break;
+        case 'PageDown':   next = cur - 5; break;
+        case 'Home':       next = 0; break;
+        case 'End':        next = row.n; break;
+        default: return;
+      }
+
+      e.preventDefault();
+      setCount(ri, clamp(next, 0, row.n));
+    });
+  }
+
+  /* --------------------------------------------------------------
+     Состояние и отрисовка
+     -------------------------------------------------------------- */
+  function setCount(ri, value) {
+    const next = clamp(Math.round(value), 0, ROWS[ri].n);
+    if (next === state[ri]) return;
+    state[ri] = next;
+    renderRow(ri);
+    renderValue();
+  }
+
+  function renderRow(ri) {
+    const row = ROWS[ri];
+    const ref = rowRefs[ri];
+    const count = state[ri];
+
+    ref.beads.forEach((bead, i) => {
+      bead.classList.toggle('inactive', i >= count);
+    });
+
+    ref.countEl.textContent = String(count);
+    ref.countEl.classList.toggle('zero', count === 0);
+
+    ref.rail.setAttribute('aria-valuenow', String(count));
+    ref.rail.setAttribute('aria-valuetext', count === 0
+      ? '0'
+      : count + ' × ' + row.place + ' = ' + formatMicro(count * row.unit, 0));
+  }
+
+  function totalMicro() {
+    let total = 0;
+    for (let i = 0; i < ROWS.length; i += 1) total += state[i] * ROWS[i].unit;
+    return total;
+  }
+
+  function renderValue() {
+    const total = totalMicro();
+
+    valueEl.textContent = formatMicro(total, 2);
+
+    if (total === 0) {
+      valueSubEl.textContent = 'все косточки на месте';
+    } else {
+      const int = Math.floor(total / 1000000);
+      const frac = total % 1000000;
+      const parts = [];
+      if (int) parts.push('целая часть ' + group(int));
+      if (frac) parts.push('дробная ' + formatMicro(frac, 0));
+      valueSubEl.textContent = parts.join(' · ');
+    }
+
+    renderBreakdown();
+  }
+
+  function renderBreakdown() {
+    const items = [];
+
+    ROWS.forEach((row, i) => {
+      const count = state[i];
+      if (!count) return;
+      items.push(
+        '<li class="break-item">' +
+          '<span class="break-label">' + row.label + ' <em>×' + count + '</em></span>' +
+          '<span class="break-value">' + formatMicro(count * row.unit, 0) + '</span>' +
+        '</li>'
+      );
+    });
+
+    breakdownEl.innerHTML = items.length
+      ? items.join('')
+      : '<li class="break-empty">На счётах ноль: все косточки лежат на исходной стороне.</li>';
+  }
+
+  function renderAll() {
+    rowRefs.forEach((_, ri) => renderRow(ri));
+    renderValue();
+  }
+
+  /* --------------------------------------------------------------
+     Кнопки
+     -------------------------------------------------------------- */
+  document.getElementById('reset').addEventListener('click', () => {
+    state.fill(0);
+    renderAll();
+  });
+
+  document.getElementById('random').addEventListener('click', () => {
+    // случайное «человеческое» число: до 100 000, с дробной частью и четвертями
+    const intValue = Math.floor(Math.random() * 100000);
+    const places = Math.floor(Math.random() * 7);
+    const decDigits = [];
+    for (let k = 0; k < 6; k += 1) {
+      decDigits.push(k < places ? Math.floor(Math.random() * 10) : 0);
+    }
+    const quarters = Math.random() < 0.45 ? Math.floor(Math.random() * 5) : 0;
+
+    let decIdx = 0;
+    let intIdx = 0;
+
+    ROWS.forEach((row, i) => {
+      if (row.kind === 'quarter') {
+        state[i] = quarters;
+      } else if (row.kind === 'dec') {
+        state[i] = decDigits[decIdx];
+        decIdx += 1;
+      } else {
+        state[i] = Math.floor(intValue / Math.pow(10, intIdx)) % 10;
+        intIdx += 1;
+      }
+    });
+
+    renderAll();
+  });
+
+  /* -------------------------------------------------------------- */
+  buildAbacus();
+  renderAll();
+})();
+</script>
+</body>
+</html>
